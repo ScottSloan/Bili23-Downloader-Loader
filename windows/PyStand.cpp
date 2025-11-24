@@ -165,6 +165,7 @@ bool PyStand::CheckEnviron(const wchar_t *rtp)
 	SetEnvironmentVariableW(L"PYSTAND_HOME", _home.c_str());
 	SetEnvironmentVariableW(L"PYSTAND_RUNTIME", _runtime.c_str());
 	SetEnvironmentVariableW(L"PYSTAND_BUILD_TIME", BUILD_TIME_STR);
+	SetEnvironmentVariableW(L"PYSTAND_CWD", _cwd.c_str());
 
 	// unnecessary to init PYSTAND_SCRIPT here.
 #if 0
@@ -402,32 +403,6 @@ int WINAPI
 WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR args, int show)
 #endif
 {
-	wchar_t cwd[MAX_PATH + 1];
-	GetCurrentDirectoryW(MAX_PATH, cwd);
-	auto isRestrictedDir = [](const wchar_t* dir) -> bool {
-		std::wstring d(dir);
-		if (d.length() < 15) return false;
-		return (d.find(L"Program Files") == 0 || d.find(L"Program Files (x86)") == 0);
-	};
-	auto isProcessAdmin = []() -> bool {
-		BOOL isAdmin = FALSE;
-		PSID adminGroup = NULL;
-		SID_IDENTIFIER_AUTHORITY NtAuthority = SECURITY_NT_AUTHORITY;
-		if (AllocateAndInitializeSid(&NtAuthority, 2,
-			SECURITY_BUILTIN_DOMAIN_RID, DOMAIN_ALIAS_RID_ADMINS,
-			0, 0, 0, 0, 0, 0, &adminGroup)) {
-			CheckTokenMembership(NULL, adminGroup, &isAdmin);
-			FreeSid(adminGroup);
-		}
-		return isAdmin == TRUE;
-	};
-	if (isRestrictedDir(cwd) && !isProcessAdmin()) {
-		wchar_t exePath[MAX_PATH + 1];
-		GetModuleFileNameW(NULL, exePath, MAX_PATH);
-		ShellExecuteW(NULL, L"runas", exePath, NULL, NULL, SW_SHOWNORMAL);
-		exit(0);
-	}
-
 	PyStand ps("runtime");
 	if (ps.DetectScript() != 0) {
 		return 3;
