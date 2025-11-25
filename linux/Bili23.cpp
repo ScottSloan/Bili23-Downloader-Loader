@@ -9,25 +9,29 @@
 #include <cerrno>
 #include <limits.h>
 
-std::string get_executable_dir() {
+int main(int argc, char* argv[]) {
     char exe_path[PATH_MAX];
     ssize_t len = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
     if (len == -1) {
-        return "";
+        std::cerr << "Failed to get executable path!" << std::endl;
+        return 10;
     }
     exe_path[len] = '\0';
-    std::string path(exe_path);
-    size_t pos = path.find_last_of('/');
-    if (pos == std::string::npos) {
-        return "";
-    }
-    return path.substr(0, pos);
-}
+    std::string rootdir;
+    std::string py_exe_path;
+    std::string entry_file;
 
-int main(int argc, char* argv[]) {
-    std::string rootdir = get_executable_dir();
-    std::string py_exe_path = rootdir + "/runtime/python3";
-    std::string entry_file = rootdir + "/_pystand_static.int";
+    setenv("LOADER", exe_path, 1);
+
+    rootdir = std::string(exe_path);
+    size_t pos = rootdir.find_last_of('/');
+    if (pos == std::string::npos) {
+        std::cerr << "Failed to parse executable directory!" << std::endl;
+        return 11;
+    }
+    rootdir = rootdir.substr(0, pos);
+    py_exe_path = rootdir + "/runtime/python3";
+    entry_file = rootdir + "/_pystand_static.int";
 
     if (access(py_exe_path.c_str(), X_OK) != 0) {
         std::cerr << "runtime/python3 not found or not executable!" << std::endl;
