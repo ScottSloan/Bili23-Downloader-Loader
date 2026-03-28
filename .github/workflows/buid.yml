@@ -1,0 +1,26 @@
+name: Build Loader
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  macos-build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: build loader
+        run: |
+          cd linux_macos
+
+          export MACOSX_DEPLOYMENT_TARGET=12.0
+
+          g++ loader.cpp -o loader
+
+      - name: upload artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: loader-macos
+          path: linux_macos/loader

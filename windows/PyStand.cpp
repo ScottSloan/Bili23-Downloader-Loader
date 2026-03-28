@@ -15,15 +15,13 @@
 #include <string.h>
 #include <winbase.h>
 #include <wincon.h>
-#include <shellapi.h>
-#include <windows.h>
 
 #include "PyStand.h"
-#include "build_info.h"
 
 #ifdef _MSC_VER
 #pragma comment(lib, "shlwapi.lib")
 #endif
+
 
 //---------------------------------------------------------------------
 // dtor
@@ -164,8 +162,6 @@ bool PyStand::CheckEnviron(const wchar_t *rtp)
 	SetEnvironmentVariableW(L"PYSTAND", _pystand.c_str());
 	SetEnvironmentVariableW(L"PYSTAND_HOME", _home.c_str());
 	SetEnvironmentVariableW(L"PYSTAND_RUNTIME", _runtime.c_str());
-	SetEnvironmentVariableW(L"PYSTAND_BUILD_TIME", BUILD_TIME_STR);
-	SetEnvironmentVariableW(L"PYSTAND_CWD", _cwd.c_str());
 
 	// unnecessary to init PYSTAND_SCRIPT here.
 #if 0
@@ -329,8 +325,6 @@ const char *init_script =
 "import os\n"
 "import copy\n"
 "import site\n"
-"import ctypes\n"
-"ctypes.windll.shcore.SetProcessDpiAwareness(2)\n"
 "PYSTAND = os.environ['PYSTAND']\n"
 "PYSTAND_HOME = os.environ['PYSTAND_HOME']\n"
 "PYSTAND_RUNTIME = os.environ['PYSTAND_RUNTIME']\n"
@@ -340,7 +334,8 @@ const char *init_script =
 "sys.PYSTAND_HOME = PYSTAND_HOME\n"
 "sys.PYSTAND_SCRIPT = PYSTAND_SCRIPT\n"
 "def MessageBox(msg, info = 'Message'):\n"
-"    ctypes.windll.user32.MessageBoxW(None, str(msg), str(info), 0x0 | 0x30)\n"
+"    import ctypes\n"
+"    ctypes.windll.user32.MessageBoxW(None, str(msg), str(info), 0)\n"
 "    return 0\n"
 "os.MessageBox = MessageBox\n"
 #ifndef PYSTAND_CONSOLE

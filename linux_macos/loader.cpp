@@ -9,19 +9,36 @@
 #include <cerrno>
 #include <limits.h>
 
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
+
 int main(int argc, char* argv[]) {
     char exe_path[PATH_MAX];
+    
+#ifdef __APPLE__
+    uint32_t size = sizeof(exe_path);
+    if (_NSGetExecutablePath(exe_path, &size) != 0) {
+        std::cerr << "Buffer too small; size needs to be " << size << std::endl;
+        return 10;
+    }
+    // _NSGetExecutablePath 可能包含符号链接或相对路径，建议转换成绝对路径
+    char real_path[PATH_MAX];
+    if (realpath(exe_path, real_path) != nullptr) {
+        strncpy(exe_path, real_path, sizeof(exe_path));
+    }
+#else
     ssize_t len = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
     if (len == -1) {
         std::cerr << "Failed to get executable path!" << std::endl;
         return 10;
     }
     exe_path[len] = '\0';
+#endif
+
     std::string rootdir;
     std::string py_exe_path;
     std::string entry_file;
-
-    setenv("LOADER", exe_path, 1);
 
     rootdir = std::string(exe_path);
     size_t pos = rootdir.find_last_of('/');
@@ -30,11 +47,14 @@ int main(int argc, char* argv[]) {
         return 11;
     }
     rootdir = rootdir.substr(0, pos);
-    py_exe_path = rootdir + "/runtime/python3";
+    py_exe_path = rootdir + "/runtime/python3.12";
     entry_file = rootdir + "/_pystand_static.int";
 
+    setenv("PYSTAND", exe_path, 1);
+    setenv("PYSTAND_HOME", rootdir.c_str(), 1);
+
     if (access(py_exe_path.c_str(), X_OK) != 0) {
-        std::cerr << "runtime/python3 not found or not executable!" << std::endl;
+        std::cerr << "runtime/python3.12 not found or not executable!" << std::endl;
         return 2;
     }
     if (access(entry_file.c_str(), R_OK) != 0) {
@@ -53,9 +73,9 @@ int main(int argc, char* argv[]) {
     // 启动子进程运行 Python
     pid_t pid = fork();
     if (pid == 0) {
-        // 子进程：执行 runtime/python3 runtime/_pystand_.int [args...]
+        // 子进程：执行 runtime/python3.12 runtime/_pystand_static.int [args...]
         execvp(py_exe_path.c_str(), exec_args.data());
-        std::cerr << "Error launching python3: " << strerror(errno) << std::endl;
+        std::cerr << "Error launching python3.12: " << strerror(errno) << std::endl;
         exit(127);
     } else if (pid > 0) {
         // 父进程：等待子进程
