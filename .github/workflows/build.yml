@@ -6,8 +6,24 @@ on:
       - main
 
 jobs:
+  # windows-build:
+  #   runs-on: windows-latest
+  #   steps:
+  #     - uses: actions/checkout@v6
+
+  #     - name: build loader
+  #       run: |
+  #         cd windows
+
+  #         cl /EHsc loader.cpp /Fe:loader.exe
+
+  #     - name: upload artifact
+  #       uses: actions/upload-artifact@v6
+  #       with:
+  #         name: loader-windows
+
   macos-build:
-    runs-on: macos-14
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v6
 
