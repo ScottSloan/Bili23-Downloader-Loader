@@ -5,4 +5,4 @@
 基于 [PyStand](https://github.com/ScottSloan/PyStand)，修改 CMakeLists.txt 以支持 UAC 申请提权。
 
 ## Linux/macOS 版本
-受 PyStand 的启发而设计的 Loader，现已改为真嵌入版；构建时需要 Linux/macOS 下的 Python development headers 和 libpython。
+受 PyStand 的启发而设计的 Loader，构建时需要 Linux/macOS 下的 Python development headers 和 libpython。
