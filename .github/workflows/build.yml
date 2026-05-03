@@ -1,42 +1,42 @@
-name: Build Loader
+# name: Build Loader
 
-on:
-  push:
-    branches:
-      - main
+# on:
+#   push:
+#     branches:
+#       - main
 
-jobs:
-  # windows-build:
-  #   runs-on: windows-latest
-  #   steps:
-  #     - uses: actions/checkout@v6
+# jobs:
+#   # windows-build:
+#   #   runs-on: windows-latest
+#   #   steps:
+#   #     - uses: actions/checkout@v6
 
-  #     - name: build loader
-  #       run: |
-  #         cd windows
+#   #     - name: build loader
+#   #       run: |
+#   #         cd windows
 
-  #         cl /EHsc loader.cpp /Fe:loader.exe
+#   #         cl /EHsc loader.cpp /Fe:loader.exe
 
-  #     - name: upload artifact
-  #       uses: actions/upload-artifact@v6
-  #       with:
-  #         name: loader-windows
+#   #     - name: upload artifact
+#   #       uses: actions/upload-artifact@v6
+#   #       with:
+#   #         name: loader-windows
 
-  macos-build:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v6
+#   macos-build:
+#     runs-on: macos-latest
+#     steps:
+#       - uses: actions/checkout@v6
 
-      - name: build loader
-        run: |
-          cd linux_macos
+#       - name: build loader
+#         run: |
+#           cd linux_macos
 
-          export MACOSX_DEPLOYMENT_TARGET=12.0
+#           export MACOSX_DEPLOYMENT_TARGET=12.0
 
-          g++ loader.cpp -o loader
+#           g++ loader.cpp -o loader
 
-      - name: upload artifact
-        uses: actions/upload-artifact@v6
-        with:
-          name: loader-macos
-          path: linux_macos/loader
+#       - name: upload artifact
+#         uses: actions/upload-artifact@v6
+#         with:
+#           name: loader-macos
+#           path: linux_macos/loader
