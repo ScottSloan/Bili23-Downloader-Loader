@@ -97,10 +97,13 @@ jobs:
         run: |
           # 显示二进制信息
           echo "Python Runtime Binary Info:"
-          otool -L /linux_macos/loader
+
+          cd linux_macos
+
+          otool -L loader
 
       - name: Upload loader artifact
         uses: actions/upload-artifact@v6
         with:
           name: loader-macos-arm64
-          path: /linux_macos/loader
+          path: linux_macos/loader
