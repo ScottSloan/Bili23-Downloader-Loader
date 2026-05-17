@@ -6,104 +6,126 @@ on:
       - main
 
 jobs:
-  # windows-build:
-  #   runs-on: windows-latest
+  build-msvc:
+    if: >-
+      github.event.pull_request.draft == false
+
+    runs-on: windows-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [ x64 ]
+        subsystem: [ GUI ]
+        include:
+          - generator: Visual Studio 17 2022
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Configure
+      run: |
+        cd windows
+        cmake
+        -G "${{ matrix.generator }}"
+        -A ${{ matrix.arch }}
+        -B build
+        ${{ matrix.subsystem == 'GUI' && '-DPYSTAND_CONSOLE=OFF' || '-DPYSTAND_CONSOLE=ON' }}
+
+    - name: Build
+      run: |
+        cd windows
+        cmake --build build --config ${{ env.BUILD_TYPE }}
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: PyStand-${{ matrix.arch }}-${{ matrix.subsystem }}
+        path: windows/build/${{ env.BUILD_TYPE }}
+
+  # macos-build:
+  #   runs-on: macos-latest
   #   steps:
   #     - uses: actions/checkout@v6
 
+  #     - name: build libffi
+  #       run: |
+  #         # 安装 libffi
+  #         curl -LO https://github.com/libffi/libffi/releases/download/v3.4.8/libffi-3.4.8.tar.gz
+
+  #         tar -xzf libffi-3.4.8.tar.gz
+  #         cd libffi-3.4.8
+
+  #         export MACOSX_DEPLOYMENT_TARGET=12.0
+
+  #         ./configure --disable-shared --enable-static --with-pic --prefix=/usr/local/opt/libffi-static
+  #         make -j$(sysctl -n hw.ncpu)
+  #         sudo make install
+
+  #     - name: build openssl
+  #       run: |
+  #         # 安装 OpenSSL
+  #         curl -LO https://www.openssl.org/source/openssl-3.3.0.tar.gz
+
+  #         tar -xzf openssl-3.3.0.tar.gz
+  #         cd openssl-3.3.0
+
+  #         export MACOSX_DEPLOYMENT_TARGET=12.0
+
+  #         ./config darwin64-arm64-cc no-shared --prefix=/usr/local/opt/openssl-static --openssldir=/usr/local/opt/openssl-static/ssl --libdir=lib
+  #         make -j$(sysctl -n hw.ncpu)
+  #         sudo make install
+
+  #     - name: build Python static runtime
+  #       run: |
+  #         # 构建 Python 静态运行时环境
+  #         curl -LO https://www.python.org/ftp/python/3.12.10/Python-3.12.10.tgz
+
+  #         tar -xzf Python-3.12.10.tgz
+  #         cd Python-3.12.10
+
+  #         echo "*static*" > Modules/Setup.local
+  #         echo "_ssl _ssl.c \$(OPENSSL_INCLUDES) \$(OPENSSL_LDFLAGS) -lssl -lcrypto -ldl -lpthread" >> Modules/Setup.local
+  #         echo "_hashlib _hashopenssl.c \$(OPENSSL_INCLUDES) \$(OPENSSL_LDFLAGS) -lcrypto -ldl -lpthread" >> Modules/Setup.local
+
+  #         export LDFLAGS="-L/usr/local/opt/openssl-static/lib -L/usr/local/opt/libffi-static/lib"
+  #         export CPPFLAGS="-I/usr/local/opt/openssl-static/include -I/usr/local/opt/libffi-static/include"
+  #         export PKG_CONFIG_PATH="/usr/local/opt/openssl-static/lib/pkgconfig:/usr/local/opt/libffi-static/lib/pkgconfig"
+  #         export PKG_CONFIG="pkg-config --static"
+  #         export MACOSX_DEPLOYMENT_TARGET=12.0
+
+  #         ./configure \
+  #           --prefix=/usr/local/opt/python-static \
+  #           --disable-shared \
+  #           --enable-optimizations \
+  #           --with-openssl=/usr/local/opt/openssl-static \
+  #           --with-ensurepip=install
+
+  #         make -j$(sysctl -n hw.ncpu)
+  #         sudo make install
+
   #     - name: build loader
   #       run: |
-  #         cd windows
+  #         cd linux_macos
 
-  #         cl /EHsc loader.cpp /Fe:loader.exe
+  #         export MACOSX_DEPLOYMENT_TARGET=12.0
 
-  #     - name: upload artifact
+  #         cmake . -DPython3_ROOT_DIR=/usr/local/opt/python-static -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl-static
+
+  #         make
+
+  #     - name: Show binary info
+  #       run: |
+  #         # 显示二进制信息
+  #         echo "Python Runtime Binary Info:"
+
+  #         cd linux_macos
+
+  #         otool -L loader
+
+  #     - name: Upload loader artifact
   #       uses: actions/upload-artifact@v6
   #       with:
-  #         name: loader-windows
-
-  macos-build:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: build libffi
-        run: |
-          # 安装 libffi
-          curl -LO https://github.com/libffi/libffi/releases/download/v3.4.8/libffi-3.4.8.tar.gz
-
-          tar -xzf libffi-3.4.8.tar.gz
-          cd libffi-3.4.8
-
-          export MACOSX_DEPLOYMENT_TARGET=12.0
-
-          ./configure --disable-shared --enable-static --with-pic --prefix=/usr/local/opt/libffi-static
-          make -j$(sysctl -n hw.ncpu)
-          sudo make install
-
-      - name: build openssl
-        run: |
-          # 安装 OpenSSL
-          curl -LO https://www.openssl.org/source/openssl-3.3.0.tar.gz
-
-          tar -xzf openssl-3.3.0.tar.gz
-          cd openssl-3.3.0
-
-          export MACOSX_DEPLOYMENT_TARGET=12.0
-
-          ./config darwin64-arm64-cc no-shared --prefix=/usr/local/opt/openssl-static --openssldir=/usr/local/opt/openssl-static/ssl --libdir=lib
-          make -j$(sysctl -n hw.ncpu)
-          sudo make install
-
-      - name: build Python static runtime
-        run: |
-          # 构建 Python 静态运行时环境
-          curl -LO https://www.python.org/ftp/python/3.12.10/Python-3.12.10.tgz
-
-          tar -xzf Python-3.12.10.tgz
-          cd Python-3.12.10
-
-          echo "*static*" > Modules/Setup.local
-          echo "_ssl _ssl.c \$(OPENSSL_INCLUDES) \$(OPENSSL_LDFLAGS) -lssl -lcrypto -ldl -lpthread" >> Modules/Setup.local
-          echo "_hashlib _hashopenssl.c \$(OPENSSL_INCLUDES) \$(OPENSSL_LDFLAGS) -lcrypto -ldl -lpthread" >> Modules/Setup.local
-
-          export LDFLAGS="-L/usr/local/opt/openssl-static/lib -L/usr/local/opt/libffi-static/lib"
-          export CPPFLAGS="-I/usr/local/opt/openssl-static/include -I/usr/local/opt/libffi-static/include"
-          export PKG_CONFIG_PATH="/usr/local/opt/openssl-static/lib/pkgconfig:/usr/local/opt/libffi-static/lib/pkgconfig"
-          export PKG_CONFIG="pkg-config --static"
-          export MACOSX_DEPLOYMENT_TARGET=12.0
-
-          ./configure \
-            --prefix=/usr/local/opt/python-static \
-            --disable-shared \
-            --enable-optimizations \
-            --with-openssl=/usr/local/opt/openssl-static \
-            --with-ensurepip=install
-
-          make -j$(sysctl -n hw.ncpu)
-          sudo make install
-
-      - name: build loader
-        run: |
-          cd linux_macos
-
-          export MACOSX_DEPLOYMENT_TARGET=12.0
-
-          cmake . -DPython3_ROOT_DIR=/usr/local/opt/python-static -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl-static
-
-          make
-
-      - name: Show binary info
-        run: |
-          # 显示二进制信息
-          echo "Python Runtime Binary Info:"
-
-          cd linux_macos
-
-          otool -L loader
-
-      - name: Upload loader artifact
-        uses: actions/upload-artifact@v6
-        with:
-          name: loader-macos-arm64
-          path: linux_macos/loader
+  #         name: loader-macos-arm64
+  #         path: linux_macos/loader
